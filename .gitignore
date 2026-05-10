@@ -1,0 +1,6 @@
+chrome-*/
+pdf-pages/
+page-*.png
+render_pdf_page.ps1
+render_pdf_pages.ps1
+github-pages-upload.zip

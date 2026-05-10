@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>滑輪與輪軸互動教學</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #20242a;
+      --muted: #5d6673;
+      --paper: #fbfcf8;
+      --line: #d8ded4;
+      --green: #7fb33d;
+      --cyan: #20a8c8;
+      --pink: #e95c8b;
+      --orange: #ef9b32;
+      --blue: #4169a8;
+      --panel: #ffffff;
+      --shadow: 0 14px 34px rgba(35, 47, 61, .12);
+      font-family: "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #f7fbf2 0%, #f7fbfd 48%, #fff8f1 100%);
+      color: var(--ink);
+      letter-spacing: 0;
+    }
+
+    header {
+      padding: 28px clamp(16px, 4vw, 44px) 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .86);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      backdrop-filter: blur(14px);
+    }
+
+    .topbar {
+      max-width: 1180px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: end;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1.06;
+      font-weight: 900;
+    }
+
+    .subtitle {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: clamp(15px, 1.6vw, 18px);
+      line-height: 1.6;
+      max-width: 780px;
+    }
+
+    .unit-tag {
+      justify-self: start;
+      border: 2px solid var(--green);
+      color: #446815;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 800;
+      background: #f4ffe6;
+      white-space: nowrap;
+    }
+
+    nav {
+      max-width: 1180px;
+      margin: 18px auto 0;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    nav a {
+      color: var(--ink);
+      text-decoration: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: 800;
+      min-width: max-content;
+    }
+
+    nav a:hover, nav a:focus {
+      border-color: var(--cyan);
+      outline: 3px solid rgba(32, 168, 200, .15);
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px clamp(16px, 4vw, 44px) 52px;
+    }
+
+    section {
+      margin: 28px 0 42px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .badge {
+      display: inline-grid;
+      place-items: center;
+      min-width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--green);
+      color: #fff;
+      font-weight: 900;
+      font-size: 20px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(23px, 3vw, 34px);
+      line-height: 1.18;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 20px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .two {
+      grid-template-columns: minmax(0, 1fr) minmax(320px, .78fr);
+    }
+
+    .three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .panel, .card, .sim {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel, .sim {
+      padding: clamp(16px, 2vw, 24px);
+    }
+
+    .card {
+      padding: 16px;
+    }
+
+    .concept {
+      border-left: 6px solid var(--green);
+    }
+
+    .concept:nth-child(2) { border-left-color: var(--cyan); }
+    .concept:nth-child(3) { border-left-color: var(--pink); }
+
+    .concept p, .panel p, .card p {
+      color: var(--muted);
+      line-height: 1.68;
+      margin: 0;
+    }
+
+    .controls {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .control-row {
+      display: grid;
+      gap: 8px;
+    }
+
+    label, legend {
+      font-weight: 800;
+      color: #343b45;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--cyan);
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .segmented input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .segmented label {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #fff;
+      text-align: center;
+      cursor: pointer;
+      transition: .16s ease;
+    }
+
+    .segmented input:checked + label {
+      color: #fff;
+      background: var(--blue);
+      border-color: var(--blue);
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      min-height: 42px;
+      font: inherit;
+      font-weight: 900;
+      color: #fff;
+      background: var(--blue);
+      cursor: pointer;
+    }
+
+    button.secondary {
+      color: var(--ink);
+      background: #eef4f1;
+      border: 1px solid var(--line);
+    }
+
+    button:hover, button:focus {
+      filter: brightness(.98);
+      outline: 3px solid rgba(65, 105, 168, .18);
+    }
+
+    .button-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .result-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 14px 0 18px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fcfffb;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: clamp(24px, 3vw, 34px);
+      line-height: 1.1;
+      margin-top: 2px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .diagram {
+      width: 100%;
+      min-height: 330px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fbff;
+    }
+
+    svg text {
+      font-family: "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif;
+      fill: var(--ink);
+      font-weight: 800;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 560px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+    }
+
+    th {
+      background: #eff7e7;
+      color: #2f4f13;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .note {
+      display: block;
+      margin-top: 10px;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 14px;
+    }
+
+    .application-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .choice {
+      min-height: 150px;
+      text-align: left;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: none;
+      display: grid;
+      align-content: start;
+      gap: 8px;
+    }
+
+    .choice[data-state="right"] {
+      border-color: var(--green);
+      background: #f4ffe9;
+    }
+
+    .choice[data-state="wrong"] {
+      border-color: var(--pink);
+      background: #fff1f6;
+    }
+
+    .choice .name {
+      display: block;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .choice .mini {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      font-weight: 700;
+    }
+
+    .quiz-options {
+      display: grid;
+      gap: 8px;
+    }
+
+    .quiz-options button {
+      text-align: left;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .quiz-options button.correct {
+      border-color: var(--green);
+      background: #f2ffe4;
+    }
+
+    .quiz-options button.incorrect {
+      border-color: var(--pink);
+      background: #fff0f5;
+    }
+
+    .feedback {
+      min-height: 52px;
+      border-left: 5px solid var(--cyan);
+      background: #f1fbff;
+      border-radius: 8px;
+      padding: 12px;
+      line-height: 1.6;
+      color: #214653;
+      font-weight: 800;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      background: #fff;
+      padding: 20px clamp(16px, 4vw, 44px);
+      color: var(--muted);
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .topbar, .two, .three {
+        grid-template-columns: 1fr;
+      }
+
+      .unit-tag {
+        justify-self: start;
+      }
+
+      .application-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .result-strip {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      header {
+        position: static;
+      }
+
+      nav {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      nav a {
+        text-align: center;
+        white-space: normal;
+      }
+
+      .application-grid, .segmented {
+        grid-template-columns: 1fr;
+      }
+
+      .diagram {
+        min-height: 270px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div>
+        <h1>滑輪與輪軸互動教學</h1>
+        <p class="subtitle">從「定滑輪、動滑輪、輪軸」看懂施力點、抗力點與支點如何影響省力與方向。</p>
+      </div>
+      <div class="unit-tag">國小自然 6 下 · 單元 1 活動 2</div>
+    </div>
+    <nav aria-label="頁面導覽">
+      <a href="#map">課程地圖</a>
+      <a href="#pulley">滑輪模擬</a>
+      <a href="#wheel">輪軸模擬</a>
+      <a href="#life">生活應用</a>
+      <a href="#quiz">小挑戰</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="map">
+      <div class="section-title">
+        <span class="badge">1</span>
+        <h2>先抓住三個關鍵</h2>
+      </div>
+      <div class="grid three">
+        <article class="card concept">
+          <h3>定滑輪</h3>
+          <p>滑輪固定不動，支點在中間，施力臂與抗力臂大約相等，所以不省力也不費力；它最大的用途是改變施力方向。</p>
+        </article>
+        <article class="card concept">
+          <h3>動滑輪</h3>
+          <p>滑輪會跟著重物一起移動，抗力點在中間，施力臂較長，因此可以省力；手和物體移動方向相同，但要一起帶動滑輪本身。</p>
+        </article>
+        <article class="card concept">
+          <h3>輪軸</h3>
+          <p>輪和軸固定在同一圓心並同步轉動。施力在半徑較大的輪上，通常比較省力；施力在半徑較小的軸上，通常比較費力。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="pulley">
+      <div class="section-title">
+        <span class="badge">2</span>
+        <h2>滑輪模擬器</h2>
+      </div>
+      <div class="grid two">
+        <div class="sim">
+          <div class="controls">
+            <fieldset class="control-row">
+              <legend>滑輪種類</legend>
+              <div class="segmented">
+                <input type="radio" id="fixedPulley" name="pulleyType" value="fixed" checked>
+                <label for="fixedPulley">定滑輪</label>
+                <input type="radio" id="movingPulley" name="pulleyType" value="moving">
+                <label for="movingPulley">動滑輪</label>
+              </div>
+            </fieldset>
+            <div class="control-row">
+              <label for="loadSlider">重物重量：<output id="loadValue">400</output> 公克重</label>
+              <input id="loadSlider" type="range" min="100" max="1000" value="400" step="50">
+            </div>
+          </div>
+
+          <div class="result-strip">
+            <div class="metric"><span>手施力</span><strong id="pulleyEffort">400</strong></div>
+            <div class="metric"><span>方向關係</span><strong id="pulleyDirection">相反</strong></div>
+            <div class="metric"><span>結論</span><strong id="pulleySaving">不省力</strong></div>
+          </div>
+
+          <svg class="diagram" viewBox="0 0 760 430" role="img" aria-label="滑輪施力圖">
+            <defs>
+              <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#20a8c8"></path>
+              </marker>
+              <marker id="arrowPink" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#e95c8b"></path>
+              </marker>
+            </defs>
+            <line x1="110" y1="54" x2="650" y2="54" stroke="#506070" stroke-width="8" stroke-linecap="round"></line>
+            <circle id="pulleyWheel" cx="380" cy="132" r="72" fill="#f3a542" stroke="#965f16" stroke-width="6"></circle>
+            <circle cx="380" cy="132" r="11" fill="#39414c"></circle>
+            <path id="ropePath" d="M300 132 V332 M460 132 V332" fill="none" stroke="#51616f" stroke-width="8" stroke-linecap="round"></path>
+            <rect id="weightBox" x="252" y="316" width="96" height="64" rx="8" fill="#4169a8"></rect>
+            <text id="weightText" x="300" y="356" text-anchor="middle" fill="#fff">400g</text>
+            <line id="effortArrow" x1="460" y1="260" x2="460" y2="350" stroke="#20a8c8" stroke-width="10" marker-end="url(#arrowBlue)"></line>
+            <line id="objectArrow" x1="300" y1="350" x2="300" y2="260" stroke="#e95c8b" stroke-width="10" marker-end="url(#arrowPink)"></line>
+            <text id="effortLabel" x="500" y="310">手向下拉</text>
+            <text id="objectLabel" x="130" y="292">物體向上</text>
+            <text id="pulleyTitle" x="380" y="412" text-anchor="middle">定滑輪：改變方向，不省力</text>
+          </svg>
+
+          <small class="note">動滑輪估算包含 60 公克重的滑輪本身；課堂實測時可先測滑輪重量，再和重物一起比較。</small>
+        </div>
+
+        <aside class="panel">
+          <h3>實驗紀錄</h3>
+          <p>把不同重量與滑輪種類加入紀錄，觀察手施力和重物重量是否相同。</p>
+          <div class="button-row" style="margin: 14px 0;">
+            <button id="addPulleyRecord" type="button">＋ 加入紀錄</button>
+            <button id="clearPulleyRecord" class="secondary" type="button">↻ 清除</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>種類</th>
+                  <th>重物</th>
+                  <th>手施力</th>
+                  <th>觀察</th>
+                </tr>
+              </thead>
+              <tbody id="pulleyRecords"></tbody>
+            </table>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="wheel">
+      <div class="section-title">
+        <span class="badge">3</span>
+        <h2>輪軸模擬器</h2>
+      </div>
+      <div class="grid two">
+        <div class="sim">
+          <div class="controls">
+            <fieldset class="control-row">
+              <legend>施力位置</legend>
+              <div class="segmented">
+                <input type="radio" id="forceWheel" name="wheelMode" value="wheel" checked>
+                <label for="forceWheel">施力在輪上</label>
+                <input type="radio" id="forceAxle" name="wheelMode" value="axle">
+                <label for="forceAxle">施力在軸上</label>
+              </div>
+            </fieldset>
+            <div class="control-row">
+              <label for="wheelLoadSlider">重物重量：<output id="wheelLoadValue">600</output> 公克重</label>
+              <input id="wheelLoadSlider" type="range" min="100" max="1200" value="600" step="50">
+            </div>
+            <div class="control-row">
+              <label for="wheelRadiusSlider">輪半徑：<output id="wheelRadiusValue">90</output></label>
+              <input id="wheelRadiusSlider" type="range" min="55" max="130" value="90" step="5">
+            </div>
+            <div class="control-row">
+              <label for="axleRadiusSlider">軸半徑：<output id="axleRadiusValue">28</output></label>
+              <input id="axleRadiusSlider" type="range" min="15" max="65" value="28" step="1">
+            </div>
+          </div>
+
+          <div class="result-strip">
+            <div class="metric"><span>需要施力</span><strong id="wheelEffort">187</strong></div>
+            <div class="metric"><span>力臂比</span><strong id="armRatio">3.2×</strong></div>
+            <div class="metric"><span>結論</span><strong id="wheelSaving">省力</strong></div>
+          </div>
+
+          <svg class="diagram" viewBox="0 0 760 430" role="img" aria-label="輪軸施力圖">
+            <defs>
+              <marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#ef9b32"></path>
+              </marker>
+            </defs>
+            <circle id="wheelCircle" cx="380" cy="198" r="90" fill="#f7c17a" stroke="#9d671c" stroke-width="5"></circle>
+            <circle id="axleCircle" cx="380" cy="198" r="28" fill="#fff2cf" stroke="#8f6a2f" stroke-width="4"></circle>
+            <circle cx="380" cy="198" r="7" fill="#303842"></circle>
+            <line id="wheelArm" x1="380" y1="198" x2="290" y2="198" stroke="#20a8c8" stroke-width="6"></line>
+            <line id="axleArm" x1="380" y1="198" x2="380" y2="226" stroke="#e95c8b" stroke-width="6"></line>
+            <line id="wheelEffortArrow" x1="290" y1="285" x2="290" y2="205" stroke="#20a8c8" stroke-width="10" marker-end="url(#arrowBlue)"></line>
+            <line id="wheelLoadArrow" x1="380" y1="238" x2="380" y2="318" stroke="#e95c8b" stroke-width="10" marker-end="url(#arrowPink)"></line>
+            <path d="M245 198 A135 135 0 0 1 515 198" fill="none" stroke="#ef9b32" stroke-width="8" marker-end="url(#arrowOrange)"></path>
+            <text id="forcePointText" x="205" y="184">施力點</text>
+            <text id="loadPointText" x="398" y="300">抗力點</text>
+            <text x="394" y="190">軸心</text>
+            <text id="wheelCaption" x="380" y="398" text-anchor="middle">施力在輪上：輪半徑較大，所以較省力</text>
+          </svg>
+        </div>
+
+        <aside class="panel">
+          <h3>輪軸怎麼像槓桿</h3>
+          <p>輪半徑和軸半徑就像兩段力臂。兩邊轉動同一個圓心，半徑越長，達到相同轉動效果時需要的力越小。</p>
+          <div class="table-wrap" style="margin-top: 14px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>情境</th>
+                  <th>力臂</th>
+                  <th>結果</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>施力在輪，重物在軸</td>
+                  <td>施力臂較長</td>
+                  <td>省力</td>
+                </tr>
+                <tr>
+                  <td>施力在軸，重物在輪</td>
+                  <td>施力臂較短</td>
+                  <td>費力</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="life">
+      <div class="section-title">
+        <span class="badge">4</span>
+        <h2>生活應用判斷</h2>
+      </div>
+      <div class="application-grid">
+        <button class="choice" type="button" data-answer="right">
+          <span class="name">門把</span>
+          <span class="mini">手握外側的把手，等於施力在較大的輪上。</span>
+        </button>
+        <button class="choice" type="button" data-answer="right">
+          <span class="name">水龍頭</span>
+          <span class="mini">轉動外側把手，比直接轉小軸更省力。</span>
+        </button>
+        <button class="choice" type="button" data-answer="wrong">
+          <span class="name">吊扇</span>
+          <span class="mini">主要用途是方便連續轉動，不一定是為了省力。</span>
+        </button>
+        <button class="choice" type="button" data-answer="wrong">
+          <span class="name">竹蜻蜓</span>
+          <span class="mini">施力在細軸上帶動大輪面，通常不是省力情境。</span>
+        </button>
+      </div>
+      <p id="lifeFeedback" class="feedback" style="margin-top: 14px;">選一個工具，判斷它在這個情境中是否屬於省力的輪軸應用。</p>
+    </section>
+
+    <section id="quiz">
+      <div class="section-title">
+        <span class="badge">5</span>
+        <h2>三題小挑戰</h2>
+      </div>
+      <div class="grid three">
+        <article class="panel">
+          <h3>1. 想把物體由低處拉到高處，又希望往下拉繩子，適合哪一種？</h3>
+          <div class="quiz-options" data-question="0"></div>
+        </article>
+        <article class="panel">
+          <h3>2. 同一重物，使用動滑輪時手施力通常會如何？</h3>
+          <div class="quiz-options" data-question="1"></div>
+        </article>
+        <article class="panel">
+          <h3>3. 螺絲起子加上較粗握柄，主要改變了什麼？</h3>
+          <div class="quiz-options" data-question="2"></div>
+        </article>
+      </div>
+      <p id="quizFeedback" class="feedback" style="margin-top: 16px;">作答後會顯示回饋。</p>
+    </section>
+  </main>
+
+  <footer>
+    本頁依據「滑輪與輪軸」教材重點重新整理為互動教學工具；圖解與文字為教學用改寫。
+  </footer>
+
+  <script>
+    const $ = (selector) => document.querySelector(selector);
+    const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+
+    const loadSlider = $("#loadSlider");
+    const loadValue = $("#loadValue");
+    const pulleyEffort = $("#pulleyEffort");
+    const pulleyDirection = $("#pulleyDirection");
+    const pulleySaving = $("#pulleySaving");
+    const pulleyRecords = $("#pulleyRecords");
+    const pulleyState = { records: [] };
+
+    function selectedPulley() {
+      return document.querySelector("input[name='pulleyType']:checked").value;
+    }
+
+    function pulleyCalculation() {
+      const load = Number(loadSlider.value);
+      const type = selectedPulley();
+      const effort = type === "fixed" ? load : Math.round((load + 60) / 2);
+      const saving = type === "fixed" ? "不省力" : (effort < load ? "省力" : "略省力");
+      const direction = type === "fixed" ? "相反" : "相同";
+      return { load, type, effort, saving, direction };
+    }
+
+    function updatePulley() {
+      const data = pulleyCalculation();
+      loadValue.textContent = data.load;
+      pulleyEffort.textContent = data.effort + "g";
+      pulleyDirection.textContent = data.direction;
+      pulleySaving.textContent = data.saving;
+      $("#weightText").textContent = data.load + "g";
+
+      if (data.type === "fixed") {
+        $("#pulleyWheel").setAttribute("cy", "132");
+        $("#ropePath").setAttribute("d", "M300 132 V332 M460 132 V332");
+        $("#weightBox").setAttribute("x", "252");
+        $("#weightBox").setAttribute("y", "316");
+        $("#effortArrow").setAttribute("x1", "460");
+        $("#effortArrow").setAttribute("x2", "460");
+        $("#effortArrow").setAttribute("y1", "260");
+        $("#effortArrow").setAttribute("y2", "350");
+        $("#objectArrow").setAttribute("x1", "300");
+        $("#objectArrow").setAttribute("x2", "300");
+        $("#objectArrow").setAttribute("y1", "350");
+        $("#objectArrow").setAttribute("y2", "260");
+        $("#effortLabel").textContent = "手向下拉";
+        $("#objectLabel").textContent = "物體向上";
+        $("#pulleyTitle").textContent = "定滑輪：改變方向，不省力";
+      } else {
+        $("#pulleyWheel").setAttribute("cy", "246");
+        $("#ropePath").setAttribute("d", "M300 54 V246 Q380 318 460 246 V90");
+        $("#weightBox").setAttribute("x", "332");
+        $("#weightBox").setAttribute("y", "322");
+        $("#effortArrow").setAttribute("x1", "460");
+        $("#effortArrow").setAttribute("x2", "460");
+        $("#effortArrow").setAttribute("y1", "156");
+        $("#effortArrow").setAttribute("y2", "76");
+        $("#objectArrow").setAttribute("x1", "380");
+        $("#objectArrow").setAttribute("x2", "380");
+        $("#objectArrow").setAttribute("y1", "340");
+        $("#objectArrow").setAttribute("y2", "270");
+        $("#effortLabel").textContent = "手向上拉";
+        $("#objectLabel").textContent = "物體向上";
+        $("#pulleyTitle").textContent = "動滑輪：通常省力，方向相同";
+      }
+    }
+
+    function renderPulleyRecords() {
+      if (!pulleyState.records.length) {
+        pulleyRecords.innerHTML = "<tr><td colspan='4'>尚未加入紀錄</td></tr>";
+        return;
+      }
+
+      pulleyRecords.innerHTML = pulleyState.records.map((record) => {
+        const type = record.type === "fixed" ? "定滑輪" : "動滑輪";
+        return `<tr><td>${type}</td><td>${record.load}g</td><td>${record.effort}g</td><td>${record.saving}</td></tr>`;
+      }).join("");
+    }
+
+    $("#addPulleyRecord").addEventListener("click", () => {
+      pulleyState.records.push(pulleyCalculation());
+      renderPulleyRecords();
+    });
+
+    $("#clearPulleyRecord").addEventListener("click", () => {
+      pulleyState.records = [];
+      renderPulleyRecords();
+    });
+
+    loadSlider.addEventListener("input", updatePulley);
+    $$("input[name='pulleyType']").forEach((input) => input.addEventListener("change", updatePulley));
+
+    const wheelLoadSlider = $("#wheelLoadSlider");
+    const wheelRadiusSlider = $("#wheelRadiusSlider");
+    const axleRadiusSlider = $("#axleRadiusSlider");
+
+    function selectedWheelMode() {
+      return document.querySelector("input[name='wheelMode']:checked").value;
+    }
+
+    function updateWheel() {
+      const load = Number(wheelLoadSlider.value);
+      const wheelR = Number(wheelRadiusSlider.value);
+      const axleR = Number(axleRadiusSlider.value);
+      const mode = selectedWheelMode();
+      const effort = mode === "wheel"
+        ? Math.round(load * axleR / wheelR)
+        : Math.round(load * wheelR / axleR);
+      const ratio = (wheelR / axleR).toFixed(1);
+
+      $("#wheelLoadValue").textContent = load;
+      $("#wheelRadiusValue").textContent = wheelR;
+      $("#axleRadiusValue").textContent = axleR;
+      $("#wheelEffort").textContent = effort + "g";
+      $("#armRatio").textContent = ratio + "×";
+      $("#wheelSaving").textContent = effort < load ? "省力" : "費力";
+      $("#wheelCircle").setAttribute("r", wheelR);
+      $("#axleCircle").setAttribute("r", axleR);
+      $("#wheelArm").setAttribute("x2", String(380 - wheelR));
+      $("#axleArm").setAttribute("y2", String(198 + axleR));
+
+      if (mode === "wheel") {
+        $("#wheelEffortArrow").setAttribute("x1", String(380 - wheelR));
+        $("#wheelEffortArrow").setAttribute("x2", String(380 - wheelR));
+        $("#wheelEffortArrow").setAttribute("y1", "285");
+        $("#wheelEffortArrow").setAttribute("y2", "205");
+        $("#wheelLoadArrow").setAttribute("x1", "380");
+        $("#wheelLoadArrow").setAttribute("x2", "380");
+        $("#wheelLoadArrow").setAttribute("y1", String(210 + axleR));
+        $("#wheelLoadArrow").setAttribute("y2", String(290 + axleR));
+        $("#forcePointText").setAttribute("x", String(180));
+        $("#forcePointText").textContent = "施力點在輪";
+        $("#loadPointText").textContent = "抗力點在軸";
+        $("#wheelCaption").textContent = "施力在輪上：輪半徑較大，所以較省力";
+      } else {
+        $("#wheelEffortArrow").setAttribute("x1", "380");
+        $("#wheelEffortArrow").setAttribute("x2", "380");
+        $("#wheelEffortArrow").setAttribute("y1", String(260));
+        $("#wheelEffortArrow").setAttribute("y2", String(208 + axleR));
+        $("#wheelLoadArrow").setAttribute("x1", String(380 - wheelR));
+        $("#wheelLoadArrow").setAttribute("x2", String(380 - wheelR));
+        $("#wheelLoadArrow").setAttribute("y1", "205");
+        $("#wheelLoadArrow").setAttribute("y2", "285");
+        $("#forcePointText").setAttribute("x", "396");
+        $("#forcePointText").textContent = "施力點在軸";
+        $("#loadPointText").textContent = "抗力點在輪";
+        $("#wheelCaption").textContent = "施力在軸上：施力臂較短，所以較費力";
+      }
+    }
+
+    [wheelLoadSlider, wheelRadiusSlider, axleRadiusSlider].forEach((input) => input.addEventListener("input", updateWheel));
+    $$("input[name='wheelMode']").forEach((input) => input.addEventListener("change", updateWheel));
+
+    $$(".choice").forEach((button) => {
+      button.addEventListener("click", () => {
+        $$(".choice").forEach((item) => item.removeAttribute("data-state"));
+        const right = button.dataset.answer === "right";
+        button.dataset.state = right ? "right" : "wrong";
+        $("#lifeFeedback").textContent = right
+          ? "判斷正確：這個情境中，施力位置在較大的輪上，能用較小的力帶動軸。"
+          : "這個例子也有輪軸結構，但此情境主要不是省力，而是方便操作或連續轉動。";
+      });
+    });
+
+    const quiz = [
+      {
+        options: ["定滑輪", "動滑輪", "輪軸"],
+        answer: 0,
+        feedback: "定滑輪常用來改變方向，往下拉繩子可以讓物體往上移動。"
+      },
+      {
+        options: ["和重物一樣", "通常比重物小", "一定比重物大"],
+        answer: 1,
+        feedback: "動滑輪的施力臂較長，通常可省力，但要把滑輪重量一起考慮。"
+      },
+      {
+        options: ["增加輪半徑", "縮短施力臂", "讓支點消失"],
+        answer: 0,
+        feedback: "較粗的握柄讓施力點離圓心更遠，等於增加輪半徑，所以轉起來較省力。"
+      }
+    ];
+
+    quiz.forEach((item, questionIndex) => {
+      const container = document.querySelector(`[data-question='${questionIndex}']`);
+      container.innerHTML = item.options.map((option, optionIndex) =>
+        `<button type="button" data-option="${optionIndex}">${option}</button>`
+      ).join("");
+      container.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          container.querySelectorAll("button").forEach((candidate) => {
+            candidate.classList.remove("correct", "incorrect");
+          });
+          const picked = Number(button.dataset.option);
+          button.classList.add(picked === item.answer ? "correct" : "incorrect");
+          container.querySelector(`[data-option='${item.answer}']`).classList.add("correct");
+          $("#quizFeedback").textContent = item.feedback;
+        });
+      });
+    });
+
+    updatePulley();
+    renderPulleyRecords();
+    updateWheel();
+  </script>
+</body>
+</html>
