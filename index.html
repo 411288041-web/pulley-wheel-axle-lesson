@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>滑輪與輪軸互動教學</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       color-scheme: light;
@@ -28,6 +29,16 @@
       background: linear-gradient(180deg, #f7fbf2 0%, #f7fbfd 48%, #fff8f1 100%);
       color: var(--ink);
       letter-spacing: 0;
+    }
+
+    body.auth-locked header,
+    body.auth-locked main,
+    body.auth-locked footer {
+      display: none;
+    }
+
+    body:not(.auth-locked) .auth-shell {
+      display: none;
     }
 
     header {
@@ -408,6 +419,80 @@
       font-weight: 800;
     }
 
+    .auth-shell {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 28px clamp(16px, 4vw, 44px);
+      background:
+        radial-gradient(circle at 15% 15%, rgba(127, 179, 61, .18), transparent 28%),
+        radial-gradient(circle at 86% 12%, rgba(32, 168, 200, .16), transparent 30%),
+        linear-gradient(180deg, #f7fbf2 0%, #f7fbfd 100%);
+    }
+
+    .auth-card {
+      width: min(100%, 520px);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: clamp(20px, 4vw, 34px);
+    }
+
+    .auth-card h1 {
+      font-size: clamp(28px, 5vw, 42px);
+      margin-bottom: 10px;
+    }
+
+    .auth-card p {
+      color: var(--muted);
+      line-height: 1.65;
+      margin: 0 0 16px;
+    }
+
+    .auth-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .auth-form input {
+      width: 100%;
+      min-height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font: inherit;
+      background: #fff;
+    }
+
+    .auth-form input:focus {
+      border-color: var(--cyan);
+      outline: 3px solid rgba(32, 168, 200, .15);
+    }
+
+    .auth-message {
+      min-height: 52px;
+      border-left: 5px solid var(--green);
+      background: #f4ffe9;
+      border-radius: 8px;
+      padding: 12px;
+      line-height: 1.6;
+      color: #2f4f13;
+      font-weight: 800;
+    }
+
+    .auth-message.error {
+      border-left-color: var(--pink);
+      background: #fff1f6;
+      color: #713047;
+    }
+
+    .auth-message.setup {
+      border-left-color: var(--orange);
+      background: #fff7e8;
+      color: #684513;
+    }
+
     footer {
       border-top: 1px solid var(--line);
       background: #fff;
@@ -460,7 +545,27 @@
     }
   </style>
 </head>
-<body>
+<body class="auth-locked">
+  <section class="auth-shell" aria-label="登入頁面">
+    <div class="auth-card">
+      <h1>登入後開始學習</h1>
+      <p>請輸入自己的電子郵件，收到驗證碼後填入正確代碼，才能進入滑輪與輪軸互動教學網站。</p>
+      <form class="auth-form" id="authForm">
+        <div class="control-row">
+          <label for="authEmail">電子郵件</label>
+          <input id="authEmail" type="email" autocomplete="email" placeholder="name@example.com" required>
+        </div>
+        <button id="sendCodeButton" type="button">寄送驗證碼</button>
+        <div class="control-row">
+          <label for="authCode">驗證碼</label>
+          <input id="authCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="輸入信中的驗證碼">
+        </div>
+        <button id="verifyCodeButton" type="submit">驗證並登入</button>
+        <p id="authMessage" class="auth-message setup">登入服務尚未設定。請在原始碼中填入 Supabase URL 與 anon key 後，才會真的寄出驗證碼。</p>
+      </form>
+    </div>
+  </section>
+
   <header>
     <div class="topbar">
       <div>
@@ -717,11 +822,114 @@
 
   <footer>
     本頁依據「滑輪與輪軸」教材重點重新整理為互動教學工具；圖解與文字為教學用改寫。
+    <button id="signOutButton" class="secondary" type="button" style="margin-left: 10px;">登出</button>
   </footer>
 
   <script>
+    const SUPABASE_URL = "";
+    const SUPABASE_ANON_KEY = "";
+
     const $ = (selector) => document.querySelector(selector);
     const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+
+    const authMessage = $("#authMessage");
+    const sendCodeButton = $("#sendCodeButton");
+    const verifyCodeButton = $("#verifyCodeButton");
+    const authEmail = $("#authEmail");
+    const authCode = $("#authCode");
+    const hasAuthConfig = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+    const authClient = hasAuthConfig && window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+    function setAuthMessage(text, type = "info") {
+      authMessage.textContent = text;
+      authMessage.classList.toggle("error", type === "error");
+      authMessage.classList.toggle("setup", type === "setup");
+    }
+
+    function unlockLesson() {
+      document.body.classList.remove("auth-locked");
+    }
+
+    function lockLesson() {
+      document.body.classList.add("auth-locked");
+    }
+
+    async function initializeAuth() {
+      if (!hasAuthConfig || !authClient) {
+        sendCodeButton.disabled = true;
+        verifyCodeButton.disabled = true;
+        setAuthMessage("登入服務尚未設定。請建立 Supabase 專案，將 Auth email template 改成寄送 {{ .Token }}，再把 Supabase URL 與 anon key 填入此頁原始碼。", "setup");
+        return;
+      }
+
+      const { data } = await authClient.auth.getSession();
+      if (data.session) {
+        unlockLesson();
+        return;
+      }
+      lockLesson();
+      setAuthMessage("請輸入電子郵件並按「寄送驗證碼」。");
+    }
+
+    sendCodeButton.addEventListener("click", async () => {
+      if (!hasAuthConfig) return;
+      const email = authEmail.value.trim();
+      if (!email) {
+        setAuthMessage("請先輸入電子郵件。", "error");
+        return;
+      }
+
+      sendCodeButton.disabled = true;
+      setAuthMessage("正在寄送驗證碼，請稍候。");
+      const { error } = await authClient.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: window.location.href
+        }
+      });
+      sendCodeButton.disabled = false;
+
+      if (error) {
+        setAuthMessage("寄送失敗：" + error.message, "error");
+        return;
+      }
+      setAuthMessage("驗證碼已寄出，請到信箱查看並輸入代碼。");
+      authCode.focus();
+    });
+
+    $("#authForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!hasAuthConfig) return;
+      const email = authEmail.value.trim();
+      const token = authCode.value.trim();
+      if (!email || !token) {
+        setAuthMessage("請輸入電子郵件與驗證碼。", "error");
+        return;
+      }
+
+      verifyCodeButton.disabled = true;
+      setAuthMessage("正在驗證代碼。");
+      const { error } = await authClient.auth.verifyOtp({
+        email,
+        token,
+        type: "email"
+      });
+      verifyCodeButton.disabled = false;
+
+      if (error) {
+        setAuthMessage("驗證失敗，請確認驗證碼是否正確或重新寄送。", "error");
+        return;
+      }
+      unlockLesson();
+    });
+
+    $("#signOutButton").addEventListener("click", async () => {
+      if (authClient) await authClient.auth.signOut();
+      authCode.value = "";
+      lockLesson();
+      setAuthMessage("已登出，請重新輸入電子郵件取得驗證碼。");
+    });
 
     const loadSlider = $("#loadSlider");
     const loadValue = $("#loadValue");
@@ -923,6 +1131,7 @@
     updatePulley();
     renderPulleyRecords();
     updateWheel();
+    initializeAuth();
   </script>
 </body>
 </html>
